@@ -23,60 +23,60 @@ jobs:
       - name: 检出仓库
         uses: actions/checkout@v4
 
-名称：自动更新Worker
-关于：
-推：
-分支：
+      - name: 设置环境
+        run: |
+          echo "REPO_URL=https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" >> $GITHUB_ENV
+          echo "TARGET_FILE=worker.zip" >> $GITHUB_ENV
 
--主要
-时间表：
--cron：“01***”#每天凌晨 1高
-workflow_dispatch:
-投入：
-force_update:
+      - name: 检查并更新 Worker
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # 使用 GitHub Token 认证
+        run: |
+          # 日志函数
+          log() { echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"; }
 
-描述：“是否强制更新（是否强制更新）”
+          log "开始检查更新..."
 
-要求：假
-默认：“false”
-权限：
+          # 获取本地版本
+          LOCAL_VERSION=$(cat version.txt 2>/dev/null || echo "")
+          log "本地版本: ${LOCAL_VERSION:-无}"
 
-内容：写作
-工作：
-更新：
-运行：ubuntu-最新
-步骤：
--姓名：检出仓库
-用途：actions/checkout@v4
+          # 获取最新 Release
+          log "获取最新 Release 信息..."
+          RESPONSE=$(curl -s --retry 3 -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3+json" "$REPO_URL")
+          if [ $? -ne 0 ]; then
+            log "ERROR: 无法访问 GitHub API"
+            exit 1
+          fi
 
--姓名：设置环境
-运行：|
+          TAG_NAME=$(echo "$RESPONSE" | jq -r '.[0].tag_name')
+          DOWNLOAD_URL=$(echo "$RESPONSE" | jq -r '.[0].assets[] | select(.name == "'"$TARGET_FILE"'") | .browser_download_url')
 
-echo "REPO_URL=https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" >> $GITHUB_ENV
-echo "TARGET_FILE=worker.zip" >> $GITHUB_ENV
--姓名：检查并更新工人
-环境：
-GITHUB_TOKEN:${secrets.GITHUB_TOKEN}##使用 GITHUB TOKEN
+          if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
+            log "ERROR: 未找到 $TARGET_FILE"
+            exit 1
+          fi
+          log "最新版本: $TAG_NAME"
 
-运行：|
-菲
-log（）{echo# 下载并更新；}
-日志“开始检查更新……”
-日志“下载$TARGET_FILE……”
-LOCAL_VERSION=$(cat version.txt 2>/dev/null || echo "")
+          # 判断是否需要更新
+          FORCE_UPDATE=${{ github.event.inputs.force_update || 'false' }}
+          if [ "$LOCAL_VERSION" = "$TAG_NAME" ] && [ "$FORCE_UPDATE" != "true" ]; then
+            log "已是最新版本，无需更新"
+            exit 0
+          fi
 
-日志“本地版本：${LOCAL_VERSION：--”
-wget -q -O 名字 如果
-日志“获取最新发布……”
-突耳
-如果[$？-ne 0]；那么
-日志“ERROR:无法访问 GitHub API”
-出口1
-菲
+          # 下载并更新
+          log "下载 $TARGET_FILE..."
+          wget -q -O "$TARGET_FILE" "$DOWNLOAD_URL"
+          log "解压 $TARGET_FILE..."
+          unzip -o "$TARGET_FILE"
+          rm "$TARGET_FILE"
+          echo "$TAG_NAME" > version.txt
+          log "更新完成，新版本: $TAG_NAME"
 
-TAG_NAME=$(echo echo 导航到下一个占位符。 > version.txt | jq -r '.[0].tag_name')
-DOWNLOAD_URL=$(echo 日志“更新完成，yodo you:更新完成_NAME” | jq -r -姓名：提交更改if：success（）#仅在更新成功时提交用法：stefanzweifel/git-auto-commit-action@v5)
-"github-actions[bot] <github-actions[bot]@users.noreply.github.com>": 日志“更新完成，yodo you:更新完成_NAME”=="null"]；那么
-日志“ERROR:未找到$TARGET_FILE”
-出口1
-菲
+      - name: 提交更改
+        if: success() # 仅在更新成功时提交
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "🔄 自动同步 Worker 版本: ${{ steps.check_update.outputs.tag_name || '未知' }}"
+          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
