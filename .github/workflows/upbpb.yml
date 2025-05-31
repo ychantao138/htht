@@ -1,0 +1,82 @@
+name: Auto Update Worker
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 1 * * *" # 每天凌晨1点运行
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: '是否强制更新（忽略版本检查）'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+
+名称：自动更新Worker
+关于：
+推：
+分支：
+
+-主要
+时间表：
+-cron：“01***”#每天凌晨 1高
+workflow_dispatch:
+投入：
+force_update:
+
+描述：“是否强制更新（是否强制更新）”
+
+要求：假
+默认：“false”
+权限：
+
+内容：写作
+工作：
+更新：
+运行：ubuntu-最新
+步骤：
+-姓名：检出仓库
+用途：actions/checkout@v4
+
+-姓名：设置环境
+运行：|
+
+echo "REPO_URL=https://api.github.com/repos/bia-pain-bache/BPB-Worker-Panel/releases" >> $GITHUB_ENV
+echo "TARGET_FILE=worker.zip" >> $GITHUB_ENV
+-姓名：检查并更新工人
+环境：
+GITHUB_TOKEN:${secrets.GITHUB_TOKEN}##使用 GITHUB TOKEN
+
+运行：|
+菲
+log（）{echo# 下载并更新；}
+日志“开始检查更新……”
+日志“下载$TARGET_FILE……”
+LOCAL_VERSION=$(cat version.txt 2>/dev/null || echo "")
+
+日志“本地版本：${LOCAL_VERSION：--”
+wget -q -O 名字 如果
+日志“获取最新发布……”
+突耳
+如果[$？-ne 0]；那么
+日志“ERROR:无法访问 GitHub API”
+出口1
+菲
+
+TAG_NAME=$(echo echo 导航到下一个占位符。 > version.txt | jq -r '.[0].tag_name')
+DOWNLOAD_URL=$(echo 日志“更新完成，yodo you:更新完成_NAME” | jq -r -姓名：提交更改if：success（）#仅在更新成功时提交用法：stefanzweifel/git-auto-commit-action@v5)
+"github-actions[bot] <github-actions[bot]@users.noreply.github.com>": 日志“更新完成，yodo you:更新完成_NAME”=="null"]；那么
+日志“ERROR:未找到$TARGET_FILE”
+出口1
+菲
